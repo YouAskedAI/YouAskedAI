@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Subscription - YouAskedAI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <style>
+        .navbar {
+            background-color: #1a1a1a;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .navbar-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .navbar-brand {
+            color: white !important;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+        .navbar-brand i {
+            font-size: 1.5rem;
+        }
+        .navbar-collapse {
+            flex-grow: 0;
+        }
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 2.2rem;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-left {
+            flex: 1 1 auto;
+        }
+        .nav-right {
+            flex: 0 0 auto;
+            gap: 2rem;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            margin: 0;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.92) !important;
+            font-size: 1.08rem;
+            font-weight: 500;
+            padding: 0.5rem 0.7rem;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(.4,0,.2,1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            white-space: nowrap;
+            background: none;
+            border: none;
+        }
+        .nav-link i {
+            font-size: 1.18rem;
+            width: 1.18rem;
+            text-align: center;
+        }
+        .nav-link:hover, .nav-link:focus {
+            color: #fff !important;
+            background: rgba(255,255,255,0.07);
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transform: translateY(-1px) scale(1.04);
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #fff;
+            transition: width 0.3s cubic-bezier(.4,0,.2,1);
+        }
+        .nav-link:hover::after, .nav-link:focus::after {
+            width: 100%;
+        }
+        .premium-link {
+            font-weight: 600;
+            color: #fff !important;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+        .premium-badge {
+            background-color: #ffc107;
+            color: #000;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-left: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            box-shadow: 0 2px 8px rgba(255,193,7,0.15);
+        }
+        .premium-link:hover .premium-badge {
+            background: #ffd740;
+            color: #222;
+            transform: scale(1.07);
+        }
+        .login-btn, .signup-btn {
+            font-size: 1.08rem;
+            font-weight: 500;
+            border-radius: 16px;
+            padding: 0.5rem 1.1rem;
+            transition: all 0.2s cubic-bezier(.4,0,.2,1);
+        }
+        .login-btn {
+            background: rgba(255,255,255,0.08);
+            margin-right: 0.5rem;
+        }
+        .signup-btn {
+            background: #fff;
+            color: #1a1a1a !important;
+            font-weight: 600;
+        }
+        .login-btn:hover, .signup-btn:hover {
+            background: #e3e3e3;
+            color: #1a1a1a !important;
+            transform: scale(1.05);
+        }
+        .theme-toggle {
+            padding: 0.5rem;
+            font-size: 1.18rem;
+            color: white;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(.4,0,.2,1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+        @media (max-width: 991.98px) {
+            .navbar-container { flex-direction: column; }
+            .navbar-nav { flex-direction: column; gap: 0.5rem; width: 100%; }
+            .nav-left, .nav-right { width: 100%; justify-content: flex-start; }
+            .nav-item { width: 100%; }
+            .nav-link { width: 100%; justify-content: flex-start; }
+            .premium-link, .auth-buttons { width: 100%; justify-content: flex-start; }
+            .login-btn, .signup-btn { width: 100%; margin: 0.25rem 0; }
+        }
+        .pricing-container {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 2.5rem;
+        }
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .pricing-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+        }
+        .pricing-header p {
+            color: #666;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .pricing-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2.5rem;
+            transition: all 0.3s ease;
+        }
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+        }
+        .pricing-card h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+        }
+        .pricing-card .price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 1.5rem;
+        }
+        .pricing-card .price span {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+        }
+        .pricing-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 2rem 0;
+        }
+        .pricing-card li {
+            padding: 0.75rem 0;
+            color: #666;
+            font-size: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .pricing-card li:last-child {
+            border-bottom: none;
+        }
+        .pricing-card li i {
+            color: #1a1a1a;
+            margin-right: 0.5rem;
+        }
+        .btn-purchase {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            background-color: #1a1a1a;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-purchase:hover {
+            background-color: #333;
+            transform: translateY(-2px);
+        }
+        .featured {
+            border: 2px solid #1a1a1a;
+            position: relative;
+        }
+        .featured-badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background-color: #1a1a1a;
+            color: white;
+            padding: 0.25rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .dropdown-menu {
+            padding: 0.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .dropdown-item i {
+            margin-right: 8px;
+            font-size: 0.95rem;
+        }
+        .theme-toggle {
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+        /* Back Button Styles */
+        .back-button {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin-right: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .back-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(-3px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .back-button i {
+            margin-right: 8px;
+            font-size: 1.1em;
+        }
+        .back-button::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: white;
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
+        }
+        .back-button:hover::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+        @media (max-width: 768px) {
+            .back-button {
+                margin: 10px 0;
+                width: 100%;
+                justify-content: center;
+            }
+            .back-button:hover {
+                transform: none;
+            }
+        }
+        .pricing-card {
+            transition: transform 0.2s;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .pricing-card:hover {
+            transform: translateY(-5px);
+        }
+        .pricing-header {
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+        }
+        .price {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+        .feature-list li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+        }
+        .feature-list li i {
+            color: #0d6efd;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <div class="navbar-container">
+                <a class="navbar-brand" href="/">
+                    <i class="bi bi-lightbulb"></i> YouAskedAI
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav nav-left">
+                        <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/homework"><i class="bi bi-journal-text"></i> Homework</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown"><i class="bi bi-mortarboard"></i> Learning</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/tutor"><i class="bi bi-person-video"></i> Live Tutor</a></li>
+                                <li><a class="dropdown-item" href="/tutor/ai"><i class="bi bi-robot"></i> AI Tutor</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item"><a class="nav-link" href="/folder"><i class="bi bi-book"></i> Course Book Purchase</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/teacher"><i class="bi bi-person-badge"></i> Teacher Portal</a></li>
+                    </ul>
+                    <ul class="navbar-nav nav-right ms-auto align-items-center">
+                        <li class="nav-item">
+                            <a class="nav-link premium-link" href="/purchase">
+                                <i class="bi bi-star-fill"></i> Premium
+                                <span class="premium-badge"><i class="bi bi-currency-dollar"></i>8.99</span>
+                            </a>
+                        </li>
+                        <li class="nav-item d-flex align-items-center gap-2">
+                            <a class="nav-link login-btn" href="/login"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+                            <a class="nav-link signup-btn" href="/signup"><i class="bi bi-person-plus"></i> Sign Up</a>
+                        </li>
+                        <li class="nav-item">
+                            <button class="theme-toggle" id="themeToggle"><i class="bi bi-moon-fill"></i></button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Premium Subscription</h1>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card pricing-card">
+                    <div class="pricing-header">
+                        <h3>Premium Plan</h3>
+                        <div class="price">$8.99<span class="fs-6">/month</span></div>
+                        <p>Unlock all features and unlimited access</p>
+                    </div>
+                    <div class="card-body">
+                        <ul class="feature-list">
+                            <li><i class="bi bi-check-circle-fill"></i> Unlimited problem solving</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Step-by-step solutions</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Access to all courses</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Priority support</li>
+                            <li><i class="bi bi-check-circle-fill"></i> No advertisements</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Advanced features</li>
+                        </ul>
+                        <button class="btn btn-primary w-100">Subscribe Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/purchase.js') }}"></script>
+</body>
+</html> 

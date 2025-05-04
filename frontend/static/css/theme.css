@@ -1,0 +1,90 @@
+:root {
+    --bg-color: #ffffff;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    --card-border: #dee2e6;
+    --nav-bg: #0d6efd;
+    --nav-text: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+    --stat-bg: #f8f9fa;
+    --modal-bg: #ffffff;
+    --modal-border: #dee2e6;
+    --btn-primary-bg: #0d6efd;
+    --btn-primary-text: #ffffff;
+    --btn-secondary-bg: #6c757d;
+    --btn-secondary-text: #ffffff;
+}
+
+[data-theme="dark"] {
+    --bg-color: #212529;
+    --text-color: #f8f9fa;
+    --card-bg: #343a40;
+    --card-border: #495057;
+    --nav-bg: #0a58ca;
+    --nav-text: #ffffff;
+    --input-bg: #495057;
+    --input-border: #6c757d;
+    --stat-bg: #495057;
+    --modal-bg: #343a40;
+    --modal-border: #495057;
+    --btn-primary-bg: #0a58ca;
+    --btn-primary-text: #ffffff;
+    --btn-secondary-bg: #495057;
+    --btn-secondary-text: #ffffff;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.navbar {
+    background-color: var(--nav-bg);
+}
+
+.navbar-brand, .nav-link {
+    color: var(--nav-text) !important;
+}
+
+.card, .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+.form-control {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+}
+
+.form-control:focus {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+.btn-primary {
+    background-color: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+
+.btn-secondary {
+    background-color: var(--btn-secondary-bg);
+    border-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+}
+
+.theme-toggle {
+    background: none;
+    border: none;
+    color: var(--nav-text);
+    cursor: pointer;
+    padding: 0.5rem;
+    margin-left: 1rem;
+}
+
+.theme-toggle i {
+    font-size: 1.2rem;
+} 

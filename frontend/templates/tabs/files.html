@@ -1,0 +1,53 @@
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Upload Files</h5>
+                </div>
+                <div class="card-body">
+                    <form id="fileUploadForm">
+                        <div class="mb-3">
+                            <label for="folderSelect" class="form-label">Select Folder</label>
+                            <select class="form-select" id="folderSelect" required>
+                                <option value="">Choose a folder...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fileInput" class="form-label">Choose Files</label>
+                            <input type="file" class="form-control" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-upload"></i> Upload Files
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Your Files</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Folder</th>
+                                    <th>Type</th>
+                                    <th>Uploaded At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="filesList">
+                                <!-- Files will be loaded here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

@@ -1,0 +1,248 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouAskedAI - Live Tutors</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #e0e7ff 0%, #f8fafc 100%);
+            min-height: 100vh;
+        }
+        .tutor-card {
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(31,38,135,0.08);
+            background: #fff;
+            padding: 2rem 1.5rem;
+            margin-bottom: 2rem;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .tutor-card:hover {
+            box-shadow: 0 8px 32px rgba(31,38,135,0.15);
+            transform: translateY(-2px);
+        }
+        .tutor-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 1.5rem;
+            border: 3px solid #0d6efd;
+        }
+        .tutor-info {
+            display: flex;
+            align-items: center;
+        }
+        .tutor-details {
+            flex: 1;
+        }
+        .tutor-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+        .tutor-subject {
+            color: #6c63ff;
+            font-size: 1.05rem;
+            margin-bottom: 0.2rem;
+        }
+        .tutor-rate {
+            color: #198754;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+        .schedule-btn {
+            min-width: 160px;
+        }
+        .modal-header {
+            background: linear-gradient(90deg, #0d6efd 60%, #6f42c1 100%);
+            color: #fff;
+            border-radius: 16px 16px 0 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-robot"></i> YouAskedAI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/tutor">
+                            <i class="bi bi-person-workspace"></i> Tutor
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/homework">
+                            <i class="bi bi-journal-text"></i> Homework
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/purchase">
+                            <i class="bi bi-star-fill"></i> Premium
+                            <span class="premium-badge">$8.99</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/signup">
+                            <i class="bi bi-person-plus"></i> Sign Up
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Available Tutors</h1>
+        <div class="row justify-content-center">
+            <!-- Example tutors, you can replace or expand this list -->
+            <div class="col-md-8">
+                <div class="tutor-card d-flex align-items-center justify-content-between">
+                    <div class="tutor-info">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Tutor" class="tutor-avatar">
+                        <div class="tutor-details">
+                            <div class="tutor-name">Dr. Karo Solat</div>
+                            <div class="tutor-subject">Mathematics</div>
+                            <div class="tutor-rate">$300/hour</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary schedule-btn" onclick="openScheduleModal('Dr. Karo Solat', 'Mathematics')">
+                        <i class="bi bi-calendar-check"></i> Schedule Session
+                    </button>
+                </div>
+                <div class="tutor-card d-flex align-items-center justify-content-between">
+                    <div class="tutor-info">
+                        <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Tutor" class="tutor-avatar">
+                        <div class="tutor-details">
+                            <div class="tutor-name">Houtan Neynavaee</div>
+                            <div class="tutor-subject">Physics</div>
+                            <div class="tutor-rate">$300/hour</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary schedule-btn" onclick="openScheduleModal('Houtan Neynavaee', 'Physics')">
+                        <i class="bi bi-calendar-check"></i> Schedule Session
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="scheduleModalLabel">Schedule a Session</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="scheduleForm">
+              <div class="mb-3">
+                <label class="form-label">Tutor</label>
+                <input type="text" class="form-control" id="modalTutorName" readonly>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Subject</label>
+                <input type="text" class="form-control" id="modalTutorSubject" readonly>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" id="sessionDate" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Time</label>
+                <input type="time" class="form-control" id="sessionTime" min="09:00" max="17:00" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Your Name</label>
+                <input type="text" class="form-control" id="studentName" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="studentEmail" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Notes (optional)</label>
+                <textarea class="form-control" id="sessionNotes" rows="2"></textarea>
+              </div>
+              <button type="submit" class="btn btn-success w-100">Book Session ($300/hr)</button>
+            </form>
+            <div id="bookingSuccess" class="alert alert-success mt-3" style="display:none;">Session booked successfully! We will contact you soon.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function openScheduleModal(tutorName, subject) {
+        document.getElementById('modalTutorName').value = tutorName;
+        document.getElementById('modalTutorSubject').value = subject;
+        document.getElementById('scheduleForm').reset();
+        document.getElementById('bookingSuccess').style.display = 'none';
+        // Set min date to today
+        const dateInput = document.getElementById('sessionDate');
+        const today = new Date();
+        dateInput.min = today.toISOString().split('T')[0];
+        dateInput.value = '';
+        // Only allow weekends (Saturday=6, Sunday=0)
+        dateInput.oninput = function() {
+            const d = new Date(this.value);
+            if (d.getDay() !== 0 && d.getDay() !== 6) {
+                alert('Please select a Saturday or Sunday.');
+                this.value = '';
+            }
+        };
+        const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+        modal.show();
+    }
+
+    document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Validate date is Saturday or Sunday
+        const dateInput = document.getElementById('sessionDate');
+        const d = new Date(dateInput.value);
+        if (d.getDay() !== 0 && d.getDay() !== 6) {
+            alert('Please select a Saturday or Sunday.');
+            return;
+        }
+        // Validate time is between 09:00 and 17:00
+        const timeInput = document.getElementById('sessionTime');
+        const [hour, minute] = timeInput.value.split(':').map(Number);
+        if (hour < 9 || hour > 17 || (hour === 17 && minute > 0)) {
+            alert('Please select a time between 09:00 and 17:00.');
+            return;
+        }
+        // Here you would send the booking data to your backend
+        document.getElementById('bookingSuccess').style.display = 'block';
+        setTimeout(() => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleModal'));
+            modal.hide();
+        }, 2000);
+    });
+    </script>
+</body>
+</html> 

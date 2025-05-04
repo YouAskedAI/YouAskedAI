@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - YouAskedAI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <style>
+        .navbar {
+            background-color: #1a1a1a;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .navbar-brand {
+            color: white !important;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+        .navbar-collapse {
+            flex-grow: 0;
+        }
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.5rem 0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .nav-link:hover {
+            color: white !important;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: white;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .dropdown-menu {
+            padding: 0.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: none;
+            background-color: white;
+        }
+        .dropdown-item {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #333;
+            transition: all 0.2s ease;
+        }
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            color: #1a1a1a;
+        }
+        .theme-toggle {
+            padding: 0.5rem;
+            font-size: 1.1rem;
+            color: white;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+        .premium-badge {
+            background-color: #ffc107;
+            color: #000;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        /* Back Button Styles */
+        .back-button {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin-right: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .back-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(-3px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .back-button i {
+            margin-right: 8px;
+            font-size: 1.1em;
+        }
+        .back-button::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: white;
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
+        }
+        .back-button:hover::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+        @media (max-width: 768px) {
+            .back-button {
+                margin: 10px 0;
+                width: 100%;
+                justify-content: center;
+            }
+            .back-button:hover {
+                transform: none;
+            }
+        }
+        .signup-container {
+            max-width: 500px;
+            margin: 4rem auto;
+            padding: 2.5rem;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        .signup-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .signup-header i {
+            font-size: 3.5rem;
+            color: #1a1a1a;
+            margin-bottom: 1.5rem;
+        }
+        .signup-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+        }
+        .signup-header p {
+            color: #666;
+            font-size: 1rem;
+        }
+        .form-control {
+            padding: 0.9rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #1a1a1a;
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+        }
+        .btn-signup {
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            background-color: #1a1a1a;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-signup:hover {
+            background-color: #333;
+            transform: translateY(-2px);
+        }
+        .password-requirements {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .password-requirements ul {
+            margin: 0.5rem 0 0 1.5rem;
+            padding: 0;
+        }
+        .password-requirements li {
+            margin-bottom: 0.25rem;
+        }
+        .terms-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 1rem;
+        }
+        .form-check-input:checked {
+            background-color: #1a1a1a;
+            border-color: #1a1a1a;
+        }
+        .form-check-label {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        .text-center a {
+            color: #1a1a1a;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .text-center a:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <div class="navbar-container">
+                <a class="navbar-brand" href="/">YouAskedAI</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/homework">Homework</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown">
+                                Learning
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="/tutor">Live Tutor</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/tutor/ai">AI Tutor</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/folder">Course Book Purchase</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <button class="theme-toggle" id="themeToggle">
+                                <i class="bi bi-moon-fill"></i>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/purchase">Premium</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/signup">Sign Up</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="signup-container">
+            <div class="signup-header">
+                <i class="bi bi-person-plus-fill"></i>
+                <h2>Create Account</h2>
+                <p class="text-muted">Join YouAskedAI today</p>
+            </div>
+
+            <form id="signupForm">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="firstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="firstName" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="lastName" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="lastName" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="email" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                    <div class="password-requirements">
+                        Password must be at least 8 characters long and include:
+                        <ul>
+                            <li>One uppercase letter</li>
+                            <li>One lowercase letter</li>
+                            <li>One number</li>
+                            <li>One special character</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="confirmPassword" required>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="terms" required>
+                    <label class="form-check-label" for="terms">
+                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 btn-signup">
+                    <i class="bi bi-person-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <p>Already have an account? <a href="/login" class="text-decoration-none">Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/signup.js') }}"></script>
+</body>
+</html> 

@@ -1,0 +1,803 @@
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+from sympy import symbols, solve, simplify
+import numpy as np
+import json
+from flask_pymongo import PyMongo
+import os
+from werkzeug.utils import secure_filename
+from datetime import datetime
+from flask_cors import CORS
+import sys
+import requests
+from PIL import Image
+import io
+import base64
+from PyPDF2 import PdfReader
+import openai
+from bson.objectid import ObjectId
+import pytesseract
+import magic
+from dotenv import load_dotenv
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+# Load environment variables
+load_dotenv()
+
+app = Flask(__name__, 
+            static_folder='../frontend/static',
+            template_folder='../frontend/templates')
+
+# Enable CORS
+CORS(app)
+
+# MongoDB configuration
+app.config["MONGO_URI"] = "mongodb://localhost:27017/science_solver"
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['ALLOWED_EXTENSIONS'] = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'csv', 'xlsx'}
+
+# API configuration
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', 'sk-68fe5d495598418897c5bc9fc1741c42')
+DEEPSEEK_API_URLS = [
+    'https://api.deepseek.ai/v1/chat/completions',
+    'https://api-inference.deepseek.com/v1/chat/completions',
+    'https://api.deepseek.com/v1/chat/completions'
+]
+
+# Initialize MongoDB
+try:
+mongo = PyMongo(app)
+    print("Successfully connected to MongoDB", file=sys.stderr)
+    
+    # Ensure database and collection exist
+    db = mongo.db
+    if 'files' not in db.list_collection_names():
+        print("Creating 'files' collection", file=sys.stderr)
+        db.create_collection('files')
+    if 'folders' not in db.list_collection_names():
+        print("Creating 'folders' collection", file=sys.stderr)
+        db.create_collection('folders')
+    print("Database and collections are ready", file=sys.stderr)
+except Exception as e:
+    print(f"Error connecting to MongoDB: {str(e)}", file=sys.stderr)
+    raise
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Helper functions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+def extract_text_from_pdf(filepath):
+    try:
+        # Extract text from PDF using PyPDF2
+        with open(filepath, 'rb') as file:
+            reader = PdfReader(file)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
+        return text
+    except Exception as e:
+        raise Exception(f"Error extracting text from PDF: {str(e)}")
+
+def extract_text_from_image(filepath):
+    try:
+        # Convert image to text using pytesseract
+        image = Image.open(filepath)
+        text = pytesseract.image_to_string(image)
+        return text
+    except Exception as e:
+        raise Exception(f"Error extracting text from image: {str(e)}")
+
+def solve_with_ai(problem, problem_type):
+    try:
+        api_key = DEEPSEEK_API_KEY
+        if not api_key:
+            raise Exception("API key not found")
+
+        print(f"Processing problem: {problem}", file=sys.stderr)
+        print(f"Problem type: {problem_type}", file=sys.stderr)
+
+        # Create a structured prompt based on problem type
+        system_prompt = f"""You are an expert {problem_type} tutor. Please solve the following problem step by step.
+        Format your response EXACTLY as follows (include the section headers exactly as shown):
+
+        Problem Statement:
+        [Restate the problem clearly]
+
+        Solution Steps:
+        1. [First step with explanation]
+        2. [Second step with explanation]
+        [Continue with numbered steps as needed]
+
+        Final Answer:
+        [Provide the final answer clearly]
+
+        Verification:
+        [Explain how to verify the solution]
+
+        Make sure to:
+        - Show all calculations and reasoning
+        - Explain each step clearly
+        - Use appropriate mathematical notation
+        - Verify your solution
+        """
+
+        # Try each API endpoint until one succeeds
+        last_error = None
+        for api_url in DEEPSEEK_API_URLS:
+            try:
+                # Prepare the API request
+                headers = {
+                    "Authorization": f"Bearer {api_key}",  # Add 'Bearer' prefix
+                    "Content-Type": "application/json"
+                }
+
+                data = {
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": problem}
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 2000
+                }
+
+                print(f"Sending request to DeepSeek API at {api_url}...", file=sys.stderr)
+                
+                # Make the API request
+                response = requests.post(
+                    api_url,
+                    headers=headers,
+                    json=data,
+                    timeout=30
+                )
+
+                print(f"API Response Status: {response.status_code}", file=sys.stderr)
+                
+                if response.status_code == 200:
+                    # Extract and return the solution
+                    result = response.json()
+                    if 'choices' in result and len(result['choices']) > 0:
+                        solution = result['choices'][0]['message']['content']
+                        print(f"Received solution: {solution}", file=sys.stderr)
+                        return solution
+                    else:
+                        raise Exception("No solution received from API")
+                else:
+                    last_error = f"API Error: {response.status_code} - {response.text}"
+                    print(f"Failed with {api_url}: {last_error}", file=sys.stderr)
+                    continue
+
+            except requests.exceptions.RequestException as e:
+                last_error = str(e)
+                print(f"Connection error with {api_url}: {str(e)}", file=sys.stderr)
+                continue
+
+        # If we get here, all endpoints failed
+        raise Exception(f"All API endpoints failed. Last error: {last_error}")
+
+    except Exception as e:
+        print(f"Error in solve_with_ai: {str(e)}", file=sys.stderr)
+        raise
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/tutor')
+def tutor():
+    return render_template('tutor.html')
+
+@app.route('/tutor/ai')
+def tutor_ai():
+    return render_template('tutor_ai.html')
+
+@app.route('/teacher')
+def teacher():
+    return render_template('teacher_dashboard.html')
+
+@app.route('/homework')
+def homework():
+    return render_template('homework.html')
+
+@app.route('/folder')
+def folder():
+    folder_id = request.args.get('id')
+    if not folder_id:
+        return "Folder ID not provided", 400
+    return render_template('folder.html')
+
+@app.route('/api/folders', methods=['GET'])
+def get_folders():
+    folders = list(mongo.db.folders.find())
+    for folder in folders:
+        folder['_id'] = str(folder['_id'])
+    return jsonify(folders)
+
+@app.route('/api/folders', methods=['POST'])
+def create_folder():
+    data = request.json
+    folder = {
+        'name': data.get('name'),
+        'description': data.get('description', ''),
+        'created_at': datetime.utcnow(),
+        'files': [],
+        'homework': [],
+        'books': []
+    }
+    result = mongo.db.folders.insert_one(folder)
+    folder['_id'] = str(result.inserted_id)
+    return jsonify(folder)
+
+@app.route('/api/folders/<folder_id>', methods=['GET'])
+def get_folder(folder_id):
+    folder = mongo.db.folders.find_one({'_id': ObjectId(folder_id)})
+    if folder:
+        folder['_id'] = str(folder['_id'])
+        return jsonify(folder)
+    return jsonify({'error': 'Folder not found'}), 404
+
+@app.route('/api/folders/<folder_id>', methods=['DELETE'])
+def delete_folder(folder_id):
+    result = mongo.db.folders.delete_one({'_id': ObjectId(folder_id)})
+    if result.deleted_count:
+        return jsonify({'message': 'Folder deleted'})
+    return jsonify({'error': 'Folder not found'}), 404
+
+@app.route('/api/folders/<folder_id>/files', methods=['GET'])
+def get_folder_files(folder_id):
+    folder = mongo.db.folders.find_one({'_id': ObjectId(folder_id)})
+    if folder:
+        return jsonify(folder.get('files', []))
+    return jsonify({'error': 'Folder not found'}), 404
+
+@app.route('/api/folders/<folder_id>/files', methods=['POST'])
+def upload_file(folder_id):
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Save file to uploads directory
+    upload_dir = os.path.join(app.root_path, 'uploads')
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+    
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(upload_dir, filename)
+    file.save(file_path)
+    
+    # Add file to folder
+    file_data = {
+        'name': filename,
+        'path': file_path,
+        'uploaded_at': datetime.utcnow()
+    }
+    
+    mongo.db.folders.update_one(
+        {'_id': ObjectId(folder_id)},
+        {'$push': {'files': file_data}}
+    )
+    
+    return jsonify(file_data)
+
+@app.route('/api/folders/<folder_id>/homework', methods=['GET'])
+def get_folder_homework(folder_id):
+    folder = mongo.db.folders.find_one({'_id': ObjectId(folder_id)})
+    if folder:
+        return jsonify(folder.get('homework', []))
+    return jsonify({'error': 'Folder not found'}), 404
+
+@app.route('/api/folders/<folder_id>/homework', methods=['POST'])
+def add_homework(folder_id):
+    data = request.json
+    homework = {
+        'title': data.get('title'),
+        'description': data.get('description', ''),
+        'created_at': datetime.utcnow()
+    }
+    
+    mongo.db.folders.update_one(
+        {'_id': ObjectId(folder_id)},
+        {'$push': {'homework': homework}}
+    )
+    
+    return jsonify(homework)
+
+@app.route('/api/folders/<folder_id>/books', methods=['GET'])
+def get_folder_books(folder_id):
+    folder = mongo.db.folders.find_one({'_id': ObjectId(folder_id)})
+    if folder:
+        return jsonify(folder.get('books', []))
+    return jsonify({'error': 'Folder not found'}), 404
+
+@app.route('/api/folders/<folder_id>/books', methods=['POST'])
+def add_book(folder_id):
+    data = request.json
+    book = {
+        'title': data.get('title'),
+        'description': data.get('description', ''),
+        'created_at': datetime.utcnow()
+    }
+    
+    mongo.db.folders.update_one(
+        {'_id': ObjectId(folder_id)},
+        {'$push': {'books': book}}
+    )
+    
+    return jsonify(book)
+
+@app.route('/api/files', methods=['GET'])
+def get_files():
+    folder_id = request.args.get('folderId', 'root')
+    files = list(mongo.db.files.find({'folder_id': folder_id}, {'_id': 1, 'filename': 1, 'type': 1, 'uploadDate': 1}))
+    return jsonify(files)
+
+@app.route('/api/solve-from-files', methods=['POST'])
+def solve_from_files():
+    data = request.get_json()
+    file_ids = data.get('fileIds', [])
+    problem_type = data.get('problemType', 'math')
+    
+    # Get file paths from MongoDB
+    files = list(mongo.db.files.find({'_id': {'$in': file_ids}}, {'path': 1, 'type': 1}))
+    
+    # Prepare files for Claude API
+    file_contents = []
+    for file in files:
+        if file['type'] == 'application/pdf':
+            # For PDF files, extract text (you'll need to implement PDF text extraction)
+            # This is a placeholder - you'll need to implement actual PDF text extraction
+            file_contents.append(f"PDF Content from {file['path']}")
+        elif file['type'].startswith('image/'):
+            # For images, you might want to use OCR to extract text
+            # This is a placeholder - you'll need to implement actual OCR
+            file_contents.append(f"Image Content from {file['path']}")
+    
+    # Combine file contents and create a prompt for Claude
+    combined_content = "\n\n".join(file_contents)
+    prompt = f"""
+    Please analyze the following content and solve the {problem_type} problem:
+    
+    {combined_content}
+    
+    Provide a step-by-step solution with:
+    1. Problem statement
+    2. Solution steps
+    3. Final answer
+    4. Verification
+    """
+    
+    # Call Claude API
+    try:
+        response = solve_with_ai(prompt, problem_type)
+        return jsonify({'solution': response})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/solve', methods=['POST'])
+def solve():
+    try:
+        problem_type = request.form.get('type')
+        problem = request.form.get('problem')
+        file = request.files.get('file')
+        extract_text = request.form.get('extract_text', 'true').lower() == 'true'
+
+        if not problem_type:
+            return jsonify({"error": "Problem type is required"}), 400
+
+        if file and file.filename:
+            if not allowed_file(file.filename):
+                return jsonify({"error": "File type not allowed"}), 400
+
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+
+            try:
+                if file.filename.lower().endswith('.pdf'):
+                    text = extract_text_from_pdf(file_path)
+                else:
+                    text = extract_text_from_image(file_path)
+                
+                if not text.strip() and extract_text:
+                    return jsonify({"error": "Could not extract text from file"}), 400
+                
+                problem = text if extract_text else f"Please analyze this {file.filename} file and solve the problems in it."
+            except Exception as e:
+                return jsonify({"error": f"Error processing file: {str(e)}"}), 400
+            finally:
+                # Clean up the uploaded file
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
+
+        if not problem:
+            return jsonify({"error": "Problem description or file is required"}), 400
+
+        result = solve_with_ai(problem, problem_type)
+        return jsonify({"solution": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Tutor routes
+@app.route('/api/tutor/chat', methods=['POST'])
+def tutor_chat():
+    try:
+        data = request.get_json()
+        message = data.get('message')
+        subject = data.get('subject')
+        
+        if not message:
+            return jsonify({"error": "Message is required"}), 400
+        
+        # Create a prompt for the AI tutor
+        system_prompt = f"""You are an expert {subject} tutor. Your goal is to help students understand concepts and solve problems.
+        Please provide clear, step-by-step explanations and encourage active learning.
+        If the student's question is unclear, ask for clarification.
+        Always maintain a supportive and encouraging tone."""
+        
+        result = solve_with_ai(message, subject, system_prompt)
+        if "error" in result:
+            return jsonify(result), 500
+            
+        return jsonify({"response": result["solution"]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tutor/resources')
+def tutor_resources():
+    try:
+        subject = request.args.get('subject')
+        if not subject:
+            return jsonify({"error": "Subject is required"}), 400
+            
+        # Sample resources - in a real application, these would come from a database
+        resources = {
+            "math": [
+                {
+                    "title": "Khan Academy Math",
+                    "description": "Comprehensive math tutorials and practice problems",
+                    "url": "https://www.khanacademy.org/math"
+                },
+                {
+                    "title": "Wolfram Alpha",
+                    "description": "Advanced math problem solver and visualizer",
+                    "url": "https://www.wolframalpha.com"
+                },
+                {
+                    "title": "Math is Fun",
+                    "description": "Interactive math lessons and games",
+                    "url": "https://www.mathsisfun.com"
+                }
+            ],
+            "physics": [
+                {
+                    "title": "Physics Classroom",
+                    "description": "Interactive physics tutorials and simulations",
+                    "url": "https://www.physicsclassroom.com"
+                },
+                {
+                    "title": "HyperPhysics",
+                    "description": "Concept maps and explanations of physics topics",
+                    "url": "http://hyperphysics.de-phaser.com"
+                },
+                {
+                    "title": "PhET Simulations",
+                    "description": "Interactive physics simulations",
+                    "url": "https://phet.colorado.edu"
+                }
+            ],
+            "chemistry": [
+                {
+                    "title": "ChemGuide",
+                    "description": "Detailed chemistry explanations and tutorials",
+                    "url": "https://www.chemguide.co.uk"
+                },
+                {
+                    "title": "Chemistry LibreTexts",
+                    "description": "Open-access chemistry textbooks and resources",
+                    "url": "https://chem.libretexts.org"
+                },
+                {
+                    "title": "Royal Society of Chemistry",
+                    "description": "Chemistry education resources and videos",
+                    "url": "https://edu.rsc.org"
+                }
+            ]
+        }
+        
+        return jsonify({"resources": resources.get(subject, [])})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tutor/practice')
+def tutor_practice():
+    try:
+        subject = request.args.get('subject')
+        if not subject:
+            return jsonify({"error": "Subject is required"}), 400
+            
+        # Sample practice problems - in a real application, these would come from a database
+        problems = {
+            "math": [
+                {
+                    "id": 1,
+                    "question": "Solve the quadratic equation: x² + 5x + 6 = 0",
+                    "solution": "Using the quadratic formula: x = [-b ± √(b² - 4ac)] / 2a\n\nFor x² + 5x + 6 = 0:\na = 1, b = 5, c = 6\n\nx = [-5 ± √(25 - 24)] / 2\nx = [-5 ± 1] / 2\n\nTherefore:\nx = (-5 + 1)/2 = -2\nx = (-5 - 1)/2 = -3\n\nThe solutions are x = -2 and x = -3."
+                },
+                {
+                    "id": 2,
+                    "question": "Find the derivative of f(x) = 3x² + 2x - 5",
+                    "solution": "Using the power rule for differentiation:\n\nf'(x) = d/dx(3x²) + d/dx(2x) - d/dx(5)\n= 3 * 2x + 2 - 0\n= 6x + 2\n\nThe derivative is f'(x) = 6x + 2."
+                }
+            ],
+            "physics": [
+                {
+                    "id": 1,
+                    "question": "A car accelerates from rest to 60 km/h in 10 seconds. What is its acceleration?",
+                    "solution": "Given:\nInitial velocity (u) = 0 km/h\nFinal velocity (v) = 60 km/h\nTime (t) = 10 s\n\nFirst, convert velocities to m/s:\n60 km/h = 60 * (1000/3600) = 16.67 m/s\n\nUsing the equation: a = (v - u)/t\na = (16.67 - 0)/10\na = 1.67 m/s²\n\nThe acceleration is 1.67 m/s²."
+                },
+                {
+                    "id": 2,
+                    "question": "Calculate the force required to accelerate a 1000 kg car at 2 m/s²",
+                    "solution": "Using Newton's second law: F = ma\n\nGiven:\nm = 1000 kg\na = 2 m/s²\n\nF = 1000 kg * 2 m/s²\nF = 2000 N\n\nThe required force is 2000 Newtons."
+                }
+            ],
+            "chemistry": [
+                {
+                    "id": 1,
+                    "question": "Balance the chemical equation: H₂ + O₂ → H₂O",
+                    "solution": "The unbalanced equation is: H₂ + O₂ → H₂O\n\nCount atoms on each side:\nLeft: 2 H, 2 O\nRight: 2 H, 1 O\n\nTo balance oxygen, we need 2 H₂O molecules:\nH₂ + O₂ → 2H₂O\n\nNow count atoms again:\nLeft: 2 H, 2 O\nRight: 4 H, 2 O\n\nTo balance hydrogen, we need 2 H₂ molecules:\n2H₂ + O₂ → 2H₂O\n\nThe balanced equation is: 2H₂ + O₂ → 2H₂O"
+                },
+                {
+                    "id": 2,
+                    "question": "Calculate the molar mass of H₂SO₄",
+                    "solution": "To calculate molar mass, add the atomic masses of all atoms in the molecule:\n\nH: 1.008 g/mol × 2 = 2.016 g/mol\nS: 32.06 g/mol × 1 = 32.06 g/mol\nO: 16.00 g/mol × 4 = 64.00 g/mol\n\nTotal molar mass = 2.016 + 32.06 + 64.00 = 98.076 g/mol\n\nThe molar mass of H₂SO₄ is 98.076 g/mol."
+                }
+            ]
+        }
+        
+        return jsonify({"problems": problems.get(subject, [])})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/purchase', methods=['POST'])
+@jwt_required
+def process_purchase():
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['card_number', 'expiry_date', 'cvv', 'name', 'amount']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Validate amount
+        if float(data['amount']) != 8.99:
+            return jsonify({'error': 'Invalid amount'}), 400
+        
+        # In a real application, you would:
+        # 1. Process the payment through a payment gateway (e.g., Stripe)
+        # 2. Update the user's premium status in the database
+        # 3. Send a confirmation email
+        
+        # For this example, we'll simulate a successful payment
+        user_id = get_jwt_identity()
+        
+        # Update user's premium status in MongoDB
+        mongo.db.users.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'is_premium': True, 'premium_purchase_date': datetime.utcnow()}}
+        )
+        
+        return jsonify({
+            'message': 'Purchase successful',
+            'premium_status': True
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/course-folders', methods=['GET'])
+def get_course_folders():
+    try:
+        folders = list(mongo.db.course_folders.find())
+        for folder in folders:
+            folder['_id'] = str(folder['_id'])
+        return jsonify(folders)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/course-folders', methods=['POST'])
+def create_course_folder():
+    try:
+        data = request.json
+        folder = {
+            'name': data.get('name'),
+            'description': data.get('description', ''),
+            'created_at': datetime.utcnow(),
+            'files': []
+        }
+        result = mongo.db.course_folders.insert_one(folder)
+        folder['_id'] = str(result.inserted_id)
+        return jsonify(folder)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/course-files', methods=['GET'])
+def get_course_files():
+    try:
+        folder_id = request.args.get('folderId')
+        query = {'folder_id': folder_id} if folder_id else {}
+        files = list(mongo.db.course_files.find(query))
+        for file in files:
+            file['_id'] = str(file['_id'])
+        return jsonify(files)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/course-files', methods=['POST'])
+def upload_course_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        folder_id = request.form.get('folderId')
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        file_data = {
+            'name': filename,
+            'path': file_path,
+            'folder_id': folder_id,
+            'uploaded_at': datetime.utcnow()
+        }
+        
+        result = mongo.db.course_files.insert_one(file_data)
+        file_data['_id'] = str(result.inserted_id)
+        
+        return jsonify(file_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Teacher Dashboard API Routes
+@app.route('/api/teacher/courses/count')
+def get_active_courses_count():
+    try:
+        count = mongo.db.courses.count_documents({'status': 'active'})
+        return jsonify({'count': count})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/students/count')
+def get_total_students_count():
+    try:
+        count = mongo.db.students.count_documents({})
+        return jsonify({'count': count})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/grading/count')
+def get_pending_grading_count():
+    try:
+        count = mongo.db.submissions.count_documents({'status': 'pending'})
+        return jsonify({'count': count})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/courses', methods=['GET'])
+def get_courses():
+    try:
+        courses = list(mongo.db.courses.find())
+        for course in courses:
+            course['_id'] = str(course['_id'])
+        return jsonify(courses)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/courses', methods=['POST'])
+def create_course():
+    try:
+    data = request.json
+        course = {
+            'name': data.get('courseName'),
+            'description': data.get('description'),
+            'start_date': data.get('startDate'),
+            'end_date': data.get('endDate'),
+            'status': 'active',
+            'created_at': datetime.utcnow()
+        }
+        result = mongo.db.courses.insert_one(course)
+        course['_id'] = str(result.inserted_id)
+        return jsonify(course)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/materials', methods=['POST'])
+def upload_material():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        course_id = request.form.get('course')
+        material_type = request.form.get('materialType')
+        title = request.form.get('title')
+        description = request.form.get('description')
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        material = {
+            'course_id': course_id,
+            'type': material_type,
+            'title': title,
+            'description': description,
+            'filename': filename,
+            'path': file_path,
+            'uploaded_at': datetime.utcnow()
+        }
+        
+        result = mongo.db.materials.insert_one(material)
+        material['_id'] = str(result.inserted_id)
+        
+        return jsonify(material)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/quizzes', methods=['POST'])
+def create_quiz():
+    try:
+        data = request.json
+        quiz = {
+            'course_id': data.get('course'),
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'time_limit': data.get('timeLimit'),
+            'questions': data.get('questions', []),
+            'created_at': datetime.utcnow()
+        }
+        result = mongo.db.quizzes.insert_one(quiz)
+        quiz['_id'] = str(result.inserted_id)
+        return jsonify(quiz)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher/exams', methods=['POST'])
+def create_exam():
+    try:
+        data = request.json
+        exam = {
+            'course_id': data.get('course'),
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'date_time': data.get('examDateTime'),
+            'duration': data.get('duration'),
+            'questions': data.get('questions', []),
+            'created_at': datetime.utcnow()
+        }
+        result = mongo.db.exams.insert_one(exam)
+        exam['_id'] = str(result.inserted_id)
+        return jsonify(exam)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5004) 

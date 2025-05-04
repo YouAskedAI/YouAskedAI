@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouAskedAI - Problem Solver</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <style>
+        body {
+            background: #fff;
+            min-height: 100vh;
+            color: #22223B;
+        }
+        .card, .chat-card {
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(31,38,135,0.08);
+            background: #fff;
+            padding: 2rem 1.5rem;
+            margin-bottom: 2rem;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .card:hover, .chat-card:hover {
+            box-shadow: 0 8px 32px rgba(31,38,135,0.15);
+            transform: translateY(-2px);
+        }
+        .btn, .btn-primary, .btn-success {
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(74,107,255,0.05);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .btn-primary {
+            background: #4A6BFF;
+            border: none;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #6C63FF;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(74,107,255,0.10);
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #22C55E;
+            border: none;
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #16A34A;
+        }
+        .navbar {
+            background: linear-gradient(90deg, #4A6BFF 60%, #6C63FF 100%);
+            border-radius: 0 0 16px 16px;
+            box-shadow: 0 4px 16px rgba(31,38,135,0.08);
+        }
+        .navbar-brand {
+            color: #fff !important;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+        .nav-link {
+            color: #fff !important;
+            margin: 0 10px;
+            font-size: 1rem;
+        }
+        .nav-link:hover {
+            color: #FFC107 !important;
+        }
+        .nav-link i {
+            color: #fff !important;
+            margin-right: 5px;
+        }
+        .premium-badge {
+            background-color: #FFC107;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        .solution-section {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: #F8FAFC;
+            border-radius: 8px;
+            border-left: 4px solid #4A6BFF;
+        }
+        .solution-section h5 {
+            color: #4A6BFF;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        .solution-steps {
+            padding-left: 1.5rem;
+            margin: 0;
+        }
+        .solution-steps li {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+        .final-answer {
+            font-weight: bold;
+            color: #22C55E;
+            font-size: 1.1rem;
+            padding: 0.5rem;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+        .verification {
+            background-color: #e3f2fd;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            color: #22223B;
+        }
+        .pdf-preview {
+            background-color: #F8FAFC;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .pdf-info i {
+            font-size: 2rem;
+            margin-right: 1rem;
+            color: #EF4444;
+        }
+        .pdf-details h6 {
+            margin: 0;
+            color: #22223B;
+        }
+        .pdf-details small {
+            color: #6B7280;
+        }
+        .pdf-preview embed {
+            border: 1px solid #E0E7FF;
+            border-radius: 4px;
+        }
+        h1, h3, h5, h6 {
+            color: #4A6BFF;
+            font-weight: 600;
+        }
+        label, .form-label {
+            color: #6C63FF;
+            font-weight: 500;
+        }
+        .alert-success {
+            background: #e8f5e9;
+            color: #22C55E;
+        }
+        .alert-danger {
+            background: #fee2e2;
+            color: #EF4444;
+        }
+        .alert-info {
+            background: #F8FAFC;
+            color: #22223B;
+            border-top: 2px solid #4A6BFF;
+        }
+        .text-secondary {
+            color: #6B7280 !important;
+        }
+        .solution-section p {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+        .solution-section ol {
+            padding-left: 1.5rem;
+        }
+        .solution-section li {
+            margin-bottom: 0.5rem;
+        }
+        .solution-section .math {
+            font-family: "Times New Roman", Times, serif;
+            font-style: italic;
+        }
+        .keyboard-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            border: 1px solid #dee2e6;
+            position: relative;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .keyboard-btn {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 1.1em;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .keyboard-btn:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .keyboard-btn:active, .keyboard-btn.clicked {
+            transform: translateY(0);
+            background-color: #dee2e6;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .btn-group .btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-group .btn.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .btn-group .btn i {
+            margin-right: 5px;
+        }
+        .keyboard-container {
+            position: relative;
+            margin-top: 10px;
+        }
+        .camera-container {
+            position: relative;
+            width: 100%;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #cameraPreview,
+        #capturedImage {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        .modal-footer {
+            justify-content: space-between;
+        }
+        .btn i {
+            margin-right: 5px;
+        }
+        .back-button {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin-right: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .back-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(-3px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .back-button i {
+            margin-right: 8px;
+            font-size: 1.1em;
+        }
+        .back-button::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: white;
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
+        }
+        .back-button:hover::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+        @media (max-width: 768px) {
+            .back-button {
+                margin: 10px 0;
+                width: 100%;
+                justify-content: center;
+            }
+            .back-button:hover {
+                transform: none;
+            }
+        }
+        @media (max-width: 768px) {
+            .navbar-collapse {
+                background-color: var(--nav-bg);
+                padding: 1rem;
+                border-radius: 8px;
+                margin-top: 1rem;
+            }
+            .nav-item {
+                margin: 0.5rem 0;
+            }
+            .keyboard-section {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                margin: 0;
+                border-radius: 0;
+                max-height: 50vh;
+                overflow-y: auto;
+            }
+            .keyboard-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .solution-section {
+                margin: 1rem 0;
+                padding: 0.75rem;
+            }
+            .tab-content {
+                padding: 0.5rem;
+            }
+            .btn-group {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            .btn-group .btn {
+                flex: 1 1 calc(50% - 0.5rem);
+                min-width: calc(50% - 0.5rem);
+            }
+            .camera-container {
+                max-height: 40vh;
+            }
+            .modal-dialog {
+                margin: 0;
+            }
+            .modal-content {
+                border-radius: 0;
+            }
+        }
+        @media (max-width: 576px) {
+            .keyboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .btn-group .btn {
+                flex: 1 1 100%;
+                min-width: 100%;
+            }
+            .solution-steps {
+                padding-left: 1rem;
+            }
+        }
+        .tutor-option-card {
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 2rem;
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .tutor-option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .tutor-option-header {
+            padding: 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, #4a6bff, #6c8eff);
+            color: white;
+        }
+        .tutor-option-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .tutor-option-body {
+            padding: 2rem;
+        }
+        .tutor-option-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4a6bff;
+            margin: 1rem 0;
+        }
+        .tutor-option-features {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+        .tutor-option-features li {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+        .tutor-option-features li i {
+            color: #4a6bff;
+            margin-right: 0.5rem;
+        }
+        .appointment-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .time-slot {
+            padding: 0.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .time-slot:hover {
+            background-color: #f8f9fa;
+        }
+        .time-slot.selected {
+            background-color: #4a6bff;
+            color: white;
+            border-color: #4a6bff;
+        }
+        @media (max-width: 768px) {
+            .navbar-collapse {
+                background-color: #0d6efd;
+                padding: 1rem;
+                border-radius: 8px;
+                margin-top: 1rem;
+            }
+            .nav-item {
+                margin: 0.5rem 0;
+            }
+            .tutor-option-card {
+                margin-bottom: 1rem;
+            }
+            .tutor-option-header {
+                padding: 1.5rem;
+            }
+            .tutor-option-body {
+                padding: 1.5rem;
+            }
+            .time-slots {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
+        .preview-img { max-width: 300px; max-height: 300px; display: block; margin: 0 auto; }
+        .pdf-preview { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .pdf-preview i { font-size: 2rem; color: #dc3545; }
+        .alert { margin-top: 1rem; }
+        .camera-container { text-align: center; margin-bottom: 1rem; }
+        #cameraStream { max-width: 100%; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-robot"></i> YouAskedAI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Main Navigation -->
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/homework">
+                            <i class="bi bi-journal-text"></i> Homework
+                        </a>
+                            </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tutor">
+                            <i class="bi bi-person-workspace"></i> Live Tutor
+                        </a>
+                            </li>
+                        </ul>
+                        
+                <!-- Right-side Navigation -->
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/purchase">
+                            <i class="bi bi-star-fill"></i> Premium
+                            <span class="premium-badge">$8.99</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#authModal">
+                            <i class="bi bi-box-arrow-in-right"></i> Login / Sign Up
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container d-flex flex-column align-items-center justify-content-center" style="min-height:0;">
+        <div id="solutionSection" class="alert alert-info mt-3 mb-0" style="display:none; max-width:1200px; width:98vw; border-radius:0; border-top: 2px solid #4A6BFF; background: #F8FAFC; color: #222; padding: 0.5rem 0;">
+            <div id="structuredSolution" class="px-2 px-md-4 py-2"></div>
+        </div>
+    </div>
+    <div class="container mt-5 position-relative" style="height:100vh;">
+        <div class="card position-absolute px-0" style="z-index:1050; max-width:1200px; min-width:320px; width:98vw; border-radius:0; box-shadow:none; border:none; padding:1rem 0 0.5rem 0; background:#fff; left:50%; top:50%; transform:translate(-50%,-70%);">
+            <div class="card-body px-2 px-md-4 py-2">
+                                <form id="problemForm">
+                                    <div class="mb-3">
+                        <label for="problemInput" class="form-label">Type your problem</label>
+                        <div class="row g-2 align-items-stretch" style="min-height: 80px;">
+                            <div class="col-12 col-md-12 mb-2 mb-md-0 d-flex flex-row h-100 position-relative">
+                                <div class="flex-grow-1 d-flex align-items-center">
+                                    <textarea class="form-control flex-grow-1 h-100" id="problemInput" rows="2" placeholder="Type your problem here..." style="min-height: 48px; font-size:1.05rem;"></textarea>
+                                </div>
+                                <div class="d-flex flex-column align-items-center justify-content-start ms-2 gap-1" style="min-width:40px;">
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill d-flex align-items-center justify-content-center mb-1" id="solveBtn" style="width:38px; height:38px; min-width:38px; min-height:38px; padding:0; background:#1e3a8a; border:none;" title="Solve">
+                                        <i class="bi bi-lightbulb" style="font-size:1.2rem;"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-dark btn-sm d-flex align-items-center justify-content-center" id="cameraBtn" style="width:38px; height:38px; padding:0; font-size:1.1rem;" title="Take Photo"><i class="bi bi-camera"></i></button>
+                                    <button type="button" class="btn btn-dark btn-sm d-flex align-items-center justify-content-center mt-1" id="uploadBtn" style="width:38px; height:38px; padding:0; font-size:1.1rem;" title="Upload"><i class="bi bi-upload"></i></button>
+                                    <input type="file" id="fileInput" accept="image/*,application/pdf" style="display:none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div id="filePreview" class="mt-2"></div>
+                        <div class="camera-container">
+                            <video id="cameraStream" autoplay playsinline style="display:none;"></video>
+                            <canvas id="cameraCanvas" style="display:none;"></canvas>
+                            <button type="button" class="btn btn-success mt-2" id="captureBtn" style="display:none;">Capture</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="problemType" class="form-label">Problem Type</label>
+                        <select class="form-select" id="problemType">
+                            <option value="math">Mathematics</option>
+                            <option value="physics">Physics</option>
+                            <option value="chemistry">Chemistry</option>
+                        </select>
+                </div>
+                </form>
+                <div id="fileSaveMsg" class="alert alert-success" style="display:none;"></div>
+                <div id="errorMsg" class="alert alert-danger" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // --- File Picker and Upload ---
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const filePreview = document.getElementById('filePreview');
+    let selectedFile = null;
+
+    uploadBtn.addEventListener('click', function() {
+        if (confirm('This app needs your permission to access and upload a PDF or image file. Do you want to continue?')) {
+            fileInput.value = '';
+            fileInput.click();
+        }
+    });
+
+    fileInput.addEventListener('change', function() {
+        filePreview.innerHTML = '';
+        selectedFile = fileInput.files[0];
+        if (!selectedFile) return;
+        if (selectedFile.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.className = 'preview-img';
+            img.style.display = 'block';
+            img.alt = 'Image preview';
+            const reader = new FileReader();
+            reader.onload = e => { img.src = e.target.result; };
+            reader.readAsDataURL(selectedFile);
+            filePreview.appendChild(img);
+        } else if (selectedFile.type === 'application/pdf') {
+            const pdfDiv = document.createElement('div');
+            pdfDiv.className = 'pdf-preview';
+            pdfDiv.innerHTML = `<i class="bi bi-file-earmark-pdf"></i> <span>${selectedFile.name}</span>`;
+            filePreview.appendChild(pdfDiv);
+        }
+        // Automatically upload after selection
+        uploadSelectedFile();
+    });
+
+    async function uploadSelectedFile() {
+        clearMessages();
+        if (!selectedFile) {
+            showError('Please select a file to upload.');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', selectedFile, selectedFile.name);
+        try {
+            const res = await fetch('/api/folders/my-files/files', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showFileSaveMsg(`File "${data.name}" uploaded and saved to My Files.`);
+            } else {
+                showError(data.error || 'Failed to upload file.');
+            }
+        } catch (err) {
+            showError('An error occurred: ' + err.message);
+        }
+    }
+
+    // --- Camera Functionality ---
+    const cameraBtn = document.getElementById('cameraBtn');
+    const cameraStream = document.getElementById('cameraStream');
+    const cameraCanvas = document.getElementById('cameraCanvas');
+    const captureBtn = document.getElementById('captureBtn');
+    let stream = null;
+    let capturedImageBlob = null;
+
+    cameraBtn.addEventListener('click', async function() {
+        if (stream) return; // Already streaming
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            cameraStream.srcObject = stream;
+            cameraStream.style.display = 'block';
+            captureBtn.style.display = 'inline-block';
+        } catch (err) {
+            showError('Could not access camera: ' + err.message);
+        }
+    });
+
+    captureBtn.addEventListener('click', function() {
+        cameraCanvas.width = cameraStream.videoWidth;
+        cameraCanvas.height = cameraStream.videoHeight;
+        cameraCanvas.getContext('2d').drawImage(cameraStream, 0, 0);
+        cameraCanvas.toBlob(blob => {
+            capturedImageBlob = blob;
+            // Show preview
+            filePreview.innerHTML = '';
+            const img = document.createElement('img');
+            img.className = 'preview-img';
+            img.src = URL.createObjectURL(blob);
+            filePreview.appendChild(img);
+            // Stop camera
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+            cameraStream.style.display = 'none';
+            captureBtn.style.display = 'none';
+        }, 'image/png');
+    });
+
+    // --- Solve Button ---
+    document.getElementById('problemForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        clearMessages();
+        const problem = document.getElementById('problemInput').value;
+        const problemType = document.getElementById('problemType').value;
+        const file = selectedFile || capturedImageBlob;
+        if (!problem && !file) {
+            showError('Please type a problem or upload/take a file.');
+            return;
+        }
+        const formData = new FormData();
+        if (file) formData.append('file', file, file.name || 'captured_image.png');
+        if (problem) formData.append('problem', problem);
+        formData.append('type', problemType);
+        try {
+            const res = await fetch('/api/solve', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (res.ok && data.solution) {
+                showSolution(data.solution);
+            } else {
+                showError(data.error || 'Failed to solve problem.');
+            }
+        } catch (err) {
+            showError('An error occurred: ' + err.message);
+        }
+    });
+
+    function showFileSaveMsg(msg) {
+        const el = document.getElementById('fileSaveMsg');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+    function showError(msg) {
+        const el = document.getElementById('errorMsg');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+    function showSolution(solution) {
+        const el = document.getElementById('structuredSolution');
+        const box = document.getElementById('solutionSection');
+        let html = '';
+
+        // Try to extract sections
+        const problemMatch = solution.match(/Problem Statement:[\s\S]*?(?=Solution Steps:|$)/i);
+        const stepsMatch = solution.match(/Solution Steps:[\s\S]*?(?=Final Answer:|$)/i);
+        const answerMatch = solution.match(/Final Answer:[\s\S]*?(?=Verification:|$)/i);
+        const verifyMatch = solution.match(/Verification:[\s\S]*/i);
+
+        if (problemMatch) {
+            html += `<h5>Problem Statement</h5><div>${escapeHTML(problemMatch[0].replace(/Problem Statement:/i, '').trim())}</div>`;
+        }
+
+        // Improved step parsing
+        if (stepsMatch) {
+            const stepsText = stepsMatch[0].replace(/Solution Steps:/i, '').trim();
+            // Split on lines that start with a number and a period
+            const steps = stepsText.split(/(?:^|\n)\d+\.\s+/).filter(s => s.trim());
+            if (steps.length > 1) {
+                html += '<h5>Solution Steps</h5><ol>';
+                steps.forEach(step => {
+                    html += `<li>${escapeHTML(step.trim())}</li>`;
+                });
+                html += '</ol>';
+            } else {
+                // Fallback: just show as text
+                html += `<h5>Solution Steps</h5><div>${escapeHTML(stepsText)}</div>`;
+            }
+        }
+
+        if (answerMatch) {
+            html += `<h5>Final Answer</h5><div class="final-answer">${escapeHTML(answerMatch[0].replace(/Final Answer:/i, '').trim())}</div>`;
+        }
+        if (verifyMatch) {
+            html += `<h5>Verification</h5><div class="verification">${escapeHTML(verifyMatch[0].replace(/Verification:/i, '').trim())}</div>`;
+        }
+
+        // Fallback: if nothing matched, show as preformatted text or try to split into steps
+        if (!html) {
+            // Try to split the whole solution into steps if possible
+            const fallbackSteps = solution.split(/(?:^|\n)\d+\.\s+/).filter(s => s.trim());
+            if (fallbackSteps.length > 1) {
+                html = '<h5>Solution Steps</h5><ol>';
+                fallbackSteps.forEach(step => {
+                    html += `<li>${escapeHTML(step.trim())}</li>`;
+                });
+                html += '</ol>';
+            } else {
+                html = `<pre>${escapeHTML(solution)}</pre>`;
+            }
+        }
+
+        el.innerHTML = html;
+        if (box) box.style.display = 'block';
+    }
+    function escapeHTML(str) {
+        return str.replace(/[&<>]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[tag]));
+    }
+    function clearMessages() {
+        document.getElementById('fileSaveMsg').style.display = 'none';
+        document.getElementById('errorMsg').style.display = 'none';
+    }
+    </script>
+
+    <!-- Auth Modal -->
+    <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="authModalLabel">Login / Sign Up</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="authForm">
+              <div class="mb-3">
+                <input type="email" class="form-control" id="authEmail" placeholder="Email" required>
+              </div>
+              <div class="mb-3">
+                <input type="password" class="form-control" id="authPassword" placeholder="Password" required>
+              </div>
+              <div id="authError" class="alert alert-danger" style="display:none;"></div>
+              <button type="submit" class="btn btn-primary w-100" id="authActionBtn">Login</button>
+              <button type="button" class="btn btn-danger w-100 mt-2" id="googleSignInBtn">Sign in with Google</button>
+            </form>
+            <div class="text-center mt-2">
+              <span id="toggleAuthMode">Don't have an account? <a href="#" id="switchToSignUp">Sign Up</a></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script>
+    // TODO: Replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyC2Je8UGO7FTp3Sr4eL7yaLRYss6OUMGaE",
+      authDomain: "youaskedai-721e5.firebaseapp.com",
+      projectId: "youaskedai-721e5",
+      storageBucket: "youaskedai-721e5.firebasestorage.app",
+      messagingSenderId: "1004551036740",
+      appId: "1:1004551036740:web:8a3f501741df05453ac111",
+      measurementId: "G-KEGWPNNTB7"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    let isSignUp = false;
+
+    document.getElementById('switchToSignUp').addEventListener('click', function(e) {
+      e.preventDefault();
+      isSignUp = !isSignUp;
+      document.getElementById('authActionBtn').textContent = isSignUp ? 'Sign Up' : 'Login';
+      this.textContent = isSignUp ? 'Login' : 'Sign Up';
+      document.getElementById('toggleAuthMode').childNodes[0].textContent = isSignUp ? 'Already have an account? ' : "Don't have an account? ";
+    });
+
+    document.getElementById('authForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      const errorDiv = document.getElementById('authError');
+      errorDiv.style.display = 'none';
+
+      if (isSignUp) {
+        auth.createUserWithEmailAndPassword(email, password)
+          .then(() => location.reload())
+          .catch(err => {
+            errorDiv.textContent = err.message;
+            errorDiv.style.display = 'block';
+          });
+      } else {
+        auth.signInWithEmailAndPassword(email, password)
+          .then(() => location.reload())
+          .catch(err => {
+            errorDiv.textContent = err.message;
+            errorDiv.style.display = 'block';
+          });
+      }
+    });
+
+    document.getElementById('googleSignInBtn').addEventListener('click', function() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then(() => location.reload())
+        .catch(err => {
+          const errorDiv = document.getElementById('authError');
+          errorDiv.textContent = err.message;
+          errorDiv.style.display = 'block';
+        });
+    });
+    </script>
+</body>
+</html> 
