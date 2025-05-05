@@ -42,7 +42,7 @@ DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions'
 
 # Initialize MongoDB
 try:
-    mongo = PyMongo(app)
+mongo = PyMongo(app)
     print("Successfully connected to MongoDB")
     print("Database and collections are ready")
 except Exception as e:
@@ -287,12 +287,12 @@ def upload_file(folder_id):
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
 
-    filename = secure_filename(file.filename)
+        filename = secure_filename(file.filename)
     file_path = os.path.join(upload_dir, filename)
-    file.save(file_path)
+        file.save(file_path)
         
     # Add file to folder
-    file_data = {
+        file_data = {
         'name': filename,
         'path': file_path,
         'uploaded_at': datetime.utcnow()

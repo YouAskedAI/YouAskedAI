@@ -415,10 +415,10 @@
                             </div>
                         </div>
                     </div>
+                        </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Problem History Modal -->
     <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
@@ -526,7 +526,7 @@
                     fileSelect.innerHTML = '<option value="">-- None --</option>';
                     files.forEach(file => {
                         fileSelect.innerHTML += `<option value="${file._id}">${file.name}</option>`;
-                    });
+                });
                 }
             } catch (error) {
                 console.error('Error loading files:', error);
@@ -546,8 +546,8 @@
 
                 if (!typedProblem && !selectedFileId) {
                     alert('Please type a problem or select a file.');
-                    return;
-                }
+                return;
+            }
 
                 solveBtn.disabled = true;
                 solveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Solving...';
@@ -571,9 +571,9 @@
                         formData.append('problem', typedProblem);
                         formData.append('type', problemType);
                         response = await fetch('/api/solve', {
-                            method: 'POST',
-                            body: formData
-                        });
+                    method: 'POST',
+                    body: formData
+                });
                     }
                     data = await response.json();
                     solveBtn.disabled = false;
@@ -661,11 +661,11 @@
                     method: 'POST',
                     body: formData
                 });
-                const data = await response.json();
+                    const data = await response.json();
                 if (solveBtn) {
                     solveBtn.disabled = false;
                     solveBtn.innerHTML = '<i class="bi bi-lightbulb"></i> Solve';
-                }
+            }
                 document.getElementById('solutionSection').style.display = 'block';
                 document.getElementById('solutionText').textContent = data.solution || data.error || 'No solution found.';
             } catch (err) {
