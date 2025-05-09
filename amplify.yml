@@ -1,0 +1,18 @@
+version: 1
+applications:
+  - frontend:
+      phases:
+        preBuild:
+          commands:
+            - pip install -r backend/requirements.txt
+        build:
+          commands:
+            - echo "Build phase completed"
+      artifacts:
+        baseDirectory: .
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - 'node_modules/**/*'
+    appRoot: . 
