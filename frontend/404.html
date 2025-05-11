@@ -9,14 +9,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <style>
-        html, body {
-            background: linear-gradient(120deg, #e0e7ff 0%, #f8fafc 100%) !important;
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
-        }
         body {
-            font-family: 'Inter', 'Segoe UI', 'Roboto', Arial, sans-serif;
+            background: #fff;
+            min-height: 100vh;
             color: #22223B;
         }
         .card, .chat-card {
@@ -57,7 +52,7 @@
             background: #16A34A;
         }
         .navbar {
-            background: linear-gradient(90deg, #0d6efd 60%, #6f42c1 100%);
+            background: linear-gradient(90deg, #4A6BFF 60%, #6C63FF 100%);
             border-radius: 0 0 16px 16px;
             box-shadow: 0 4px 16px rgba(31,38,135,0.08);
         }
@@ -471,19 +466,59 @@
         .camera-container { text-align: center; margin-bottom: 1rem; }
         #cameraStream { max-width: 100%; border-radius: 8px; }
     </style>
-    <!-- Add Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
 <body>
-    <!-- Include the navbar -->
-    {% include 'navbar.html' %}
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-robot"></i> YouAskedAI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Main Navigation -->
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/homework">
+                            <i class="bi bi-journal-text"></i> Homework
+                        </a>
+                            </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tutor">
+                            <i class="bi bi-person-workspace"></i> Live Tutor
+                        </a>
+                            </li>
+                        </ul>
+                        
+                <!-- Right-side Navigation -->
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/purchase">
+                            <i class="bi bi-star-fill"></i> Premium
+                            <span class="premium-badge">$8.99</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#authModal">
+                            <i class="bi bi-box-arrow-in-right"></i> Login / Sign Up
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
     <div class="container d-flex flex-column align-items-center justify-content-center" style="min-height:0;">
         <div id="solutionSection" class="alert alert-info mt-3 mb-0" style="display:none; max-width:1200px; width:98vw; border-radius:0; border-top: 2px solid #4A6BFF; background: #F8FAFC; color: #222; padding: 0.5rem 0;">
             <div id="structuredSolution" class="px-2 px-md-4 py-2"></div>
         </div>
-                    </div>
+    </div>
     <div class="container mt-5 position-relative" style="height:100vh;">
         <div class="card position-absolute px-0" style="z-index:1050; max-width:1200px; min-width:320px; width:98vw; border-radius:0; box-shadow:none; border:none; padding:1rem 0 0.5rem 0; background:#fff; left:50%; top:50%; transform:translate(-50%,-70%);">
             <div class="card-body px-2 px-md-4 py-2">
@@ -767,20 +802,21 @@
     </div>
 
     <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script>
-    // Initialize Firebase
+    // TODO: Replace with your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyC2Je8UGO7FTp3Sr4eL7yaLRYss6OUMGaE",
       authDomain: "youaskedai-721e5.firebaseapp.com",
       projectId: "youaskedai-721e5",
       storageBucket: "youaskedai-721e5.firebasestorage.app",
       messagingSenderId: "1004551036740",
-      appId: "1:1004551036740:web:ec21932ed7b8b0a63ac111",
-      measurementId: "G-78JEY77XWR"
+      appId: "1:1004551036740:web:8a3f501741df05453ac111",
+      measurementId: "G-KEGWPNNTB7"
     };
-
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
     let isSignUp = false;
 
@@ -800,14 +836,14 @@
       errorDiv.style.display = 'none';
 
       if (isSignUp) {
-        firebase.auth().createUserWithEmailAndPassword(email, password)
+        auth.createUserWithEmailAndPassword(email, password)
           .then(() => location.reload())
           .catch(err => {
             errorDiv.textContent = err.message;
             errorDiv.style.display = 'block';
           });
       } else {
-        firebase.auth().signInWithEmailAndPassword(email, password)
+        auth.signInWithEmailAndPassword(email, password)
           .then(() => location.reload())
           .catch(err => {
             errorDiv.textContent = err.message;
@@ -818,7 +854,7 @@
 
     document.getElementById('googleSignInBtn').addEventListener('click', function() {
       const provider = new firebase.auth.GoogleAuthProvider();
-      firebase.auth().signInWithPopup(provider)
+      auth.signInWithPopup(provider)
         .then(() => location.reload())
         .catch(err => {
           const errorDiv = document.getElementById('authError');

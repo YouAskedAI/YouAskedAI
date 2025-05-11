@@ -8,20 +8,29 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
+        html, body {
+            background: linear-gradient(120deg, #e0e7ff 0%, #f8fafc 100%) !important;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', 'Roboto', Arial, sans-serif;
+            color: #22223B;
+            display: flex;
+            flex-direction: column;
+        }
+
         .navbar {
-            background-color: #1a1a1a;
+            background-color: var(--secondary-color);
             padding: 1rem 2rem;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        .navbar-container {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            justify-content: space-between;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+
         .navbar-brand {
             color: white !important;
             font-weight: 700;
@@ -29,140 +38,125 @@
             text-decoration: none;
             letter-spacing: 0.5px;
         }
-        .navbar-collapse {
-            flex-grow: 0;
-        }
-        .navbar-nav {
+
+        .main-content {
+            flex: 1;
             display: flex;
             align-items: center;
-            gap: 2rem;
+            justify-content: center;
+            padding: 2rem;
         }
-        .nav-item {
-            display: flex;
-            align-items: center;
-        }
-        .nav-link {
-            color: rgba(255, 255, 255, 0.85) !important;
-            font-size: 1rem;
-            font-weight: 500;
-            padding: 0.5rem 0;
-            text-decoration: none;
-            transition: all 0.3s ease;
+
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
             position: relative;
         }
-        .nav-link:hover {
-            color: white !important;
-        }
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background-color: white;
-            transition: width 0.3s ease;
-        }
-        .nav-link:hover::after {
-            width: 100%;
-        }
-        .dropdown-menu {
-            padding: 0.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            border: none;
-            background-color: white;
-        }
-        .dropdown-item {
-            padding: 0.75rem 1.25rem;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #333;
-            transition: all 0.2s ease;
-        }
-        .dropdown-item:hover {
-            background-color: #f8f9fa;
-            color: #1a1a1a;
-        }
-        .theme-toggle {
-            padding: 0.5rem;
-            font-size: 1.1rem;
-            color: white;
-            background: none;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        .theme-toggle:hover {
-            transform: scale(1.1);
-        }
-        .login-container {
-            max-width: 450px;
-            margin: 4rem auto;
-            padding: 2.5rem;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
+
         .login-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 2rem;
             text-align: center;
-            margin-bottom: 2.5rem;
         }
-        .login-header i {
-            font-size: 3.5rem;
-            color: #1a1a1a;
-            margin-bottom: 1.5rem;
-        }
+
         .login-header h2 {
+            margin: 0;
             font-size: 2rem;
             font-weight: 700;
-            color: #1a1a1a;
+        }
+
+        .login-header p {
+            margin: 0.5rem 0 0;
+            opacity: 0.9;
+        }
+
+        .login-form {
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text-color);
             margin-bottom: 0.5rem;
         }
-        .login-header p {
-            color: #666;
-            font-size: 1rem;
-        }
+
         .form-control {
-            padding: 0.9rem 1rem;
+            padding: 0.75rem 1rem;
             border-radius: 8px;
-            border: 1px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             font-size: 1rem;
             transition: all 0.3s ease;
         }
+
         .form-control:focus {
-            border-color: #1a1a1a;
-            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
         }
+
         .btn-login {
-            padding: 1rem;
+            width: 100%;
+            padding: 0.75rem;
             border-radius: 8px;
             font-weight: 600;
             font-size: 1rem;
-            background-color: #1a1a1a;
+            background-color: var(--primary-color);
             border: none;
+            color: white;
             transition: all 0.3s ease;
         }
+
         .btn-login:hover {
-            background-color: #333;
+            background-color: #357ABD;
             transform: translateY(-2px);
         }
+
         .social-login {
             margin-top: 2rem;
             text-align: center;
         }
+
         .social-login p {
             color: #666;
-            margin-bottom: 1.5rem;
-            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            position: relative;
         }
+
+        .social-login p::before,
+        .social-login p::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 30%;
+            height: 1px;
+            background-color: var(--border-color);
+        }
+
+        .social-login p::before {
+            left: 0;
+        }
+
+        .social-login p::after {
+            right: 0;
+        }
+
         .social-buttons {
             display: flex;
             gap: 1rem;
             justify-content: center;
         }
+
         .social-btn {
-            padding: 0.75rem 1.5rem;
+            flex: 1;
+            padding: 0.75rem;
             border-radius: 8px;
             color: white;
             text-decoration: none;
@@ -170,189 +164,421 @@
             font-weight: 500;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
         }
-        .social-btn:hover {
-            transform: translateY(-2px);
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
+
         .google-btn {
             background-color: #DB4437;
         }
+
+        .google-btn:hover {
+            background-color: #C53929;
+            color: white;
+        }
+
         .facebook-btn {
             background-color: #4267B2;
         }
-        .form-check-input:checked {
-            background-color: #1a1a1a;
-            border-color: #1a1a1a;
+
+        .facebook-btn:hover {
+            background-color: #365899;
+            color: white;
         }
-        .form-check-label {
-            color: #666;
-            font-size: 0.95rem;
+
+        .form-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
         }
-        .text-center a {
-            color: #1a1a1a;
-            font-weight: 500;
+
+        .form-footer a {
+            color: var(--primary-color);
             text-decoration: none;
-            transition: color 0.3s ease;
+            font-weight: 500;
         }
-        .text-center a:hover {
-            color: #333;
+
+        .form-footer a:hover {
+            text-decoration: underline;
         }
-        /* Back Button Styles */
+
         .back-button {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 8px 15px;
-            margin-right: 15px;
-            transition: all 0.3s ease;
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            color: white;
+            text-decoration: none;
             display: flex;
             align-items: center;
-            position: relative;
-            overflow: hidden;
+            gap: 0.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
+
         .back-button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.8);
             transform: translateX(-3px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        .back-button i {
-            margin-right: 8px;
-            font-size: 1.1em;
+
+        @media (max-width: 576px) {
+            .login-container {
+                margin: 1rem;
+            }
+
+            .social-buttons {
+                flex-direction: column;
+            }
         }
-        .back-button::after {
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .loading::after {
             content: '';
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: white;
-            transform: scaleX(0);
-            transform-origin: right;
-            transition: transform 0.3s ease;
+            width: 1rem;
+            height: 1rem;
+            top: 50%;
+            left: 50%;
+            margin: -0.5rem 0 0 -0.5rem;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-        .back-button:hover::after {
-            transform: scaleX(1);
-            transform-origin: left;
-        }
-        @media (max-width: 768px) {
-            .back-button {
-                margin: 10px 0;
-                width: 100%;
-                justify-content: center;
-            }
-            .back-button:hover {
-                transform: none;
-            }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg">
+    <nav class="navbar">
         <div class="container">
-            <div class="navbar-container">
-                <a class="navbar-brand" href="/">YouAskedAI</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/homework">Homework</a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown">
-                                Learning
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="/tutor">Live Tutor</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="/tutor/ai">AI Tutor</a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/folder">Course Book Purchase</a>
-                        </li>
-                    </ul>
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item">
-                            <button class="theme-toggle" id="themeToggle">
-                                <i class="bi bi-moon-fill"></i>
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/purchase">Premium</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/login">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/signup">Sign Up</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            <a href="/" class="navbar-brand">YouAskedAI</a>
         </div>
     </nav>
 
-    <div class="container">
+    <div class="main-content">
         <div class="login-container">
+            <a href="/" class="back-button">
+                <i class="bi bi-arrow-left"></i>
+                Back to Home
+            </a>
+            
             <div class="login-header">
-                <i class="bi bi-person-circle"></i>
                 <h2>Welcome Back</h2>
-                <p class="text-muted">Please login to your account</p>
+                <p>Sign in to continue your learning journey</p>
             </div>
 
-            <form id="loginForm">
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email address</label>
-                    <input type="email" class="form-control" id="email" required>
-                </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" required>
-                </div>
-                <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="rememberMe">
-                    <label class="form-check-label" for="rememberMe">Remember me</label>
-                </div>
-                <button type="submit" class="btn btn-primary w-100 btn-login">
-                    <i class="bi bi-box-arrow-in-right"></i> Login
-                </button>
-            </form>
+            <div class="login-form">
+                <div id="errorMessage" class="error-message"></div>
+                <form id="loginForm" onsubmit="return handleLogin(event)">
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
 
-            <div class="text-center mt-3">
-                <a href="#" class="text-decoration-none">Forgot password?</a>
-            </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
 
-            <div class="social-login">
-                <p>Or login with</p>
-                <div class="social-buttons">
-                    <a href="#" class="social-btn google-btn">
-                        <i class="bi bi-google"></i> Google
-                    </a>
-                    <a href="#" class="social-btn facebook-btn">
-                        <i class="bi bi-facebook"></i> Facebook
-                    </a>
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe">
+                        <label class="form-check-label" for="rememberMe">Remember me</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-login" id="loginButton">Sign In</button>
+                </form>
+
+                <div class="social-login">
+                    <p>Or continue with</p>
+                    <div class="social-buttons">
+                        <button class="social-btn google-btn" onclick="handleGoogleLogin()">
+                            <i class="bi bi-google"></i>
+                            Google
+                        </button>
+                        <button class="social-btn facebook-btn" onclick="handleFacebookLogin()">
+                            <i class="bi bi-facebook"></i>
+                            Facebook
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="text-center mt-4">
-                <p>Don't have an account? <a href="/signup" class="text-decoration-none">Sign up</a></p>
+                <div class="form-footer">
+                    <p>Don't have an account? <a href="/signup">Sign up</a></p>
+                    <p><a href="/forgot-password">Forgot your password?</a></p>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyC2Je8UGO7FTp3Sr4eL7yaLRYss6OUMGaE",
+            authDomain: "youaskedai-721e5.firebaseapp.com",
+            projectId: "youaskedai-721e5",
+            storageBucket: "youaskedai-721e5.firebasestorage.app",
+            messagingSenderId: "1004551036740",
+            appId: "1:1004551036740:web:ec21932ed7b8b0a63ac111",
+            measurementId: "G-78JEY77XWR"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Hide error message
+        function hideError() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.style.display = 'none';
+        }
+
+        // Set loading state
+        function setLoading(isLoading) {
+            const button = document.getElementById('loginButton');
+            if (isLoading) {
+                button.classList.add('loading');
+                button.disabled = true;
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+            }
+        }
+
+        // Function to handle email/password login
+        async function handleLogin(event) {
+            event.preventDefault();
+            hideError();
+            setLoading(true);
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                // Sign in with Firebase
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Get the ID token
+                const idToken = await user.getIdToken(true); // Force token refresh
+                
+                console.log('Got ID token:', idToken.substring(0, 20) + '...'); // Log first 20 chars of token
+                
+                // Verify token with backend
+                const response = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    }
+                });
+                
+                console.log('Token verification response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Token verification error:', errorData);
+                    throw new Error(errorData.error || 'Failed to verify token');
+                }
+                
+                const userData = await response.json();
+                console.log('User data received:', userData);
+                
+                // Store user data and token
+                localStorage.setItem('user', JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL
+                }));
+                localStorage.setItem('token', idToken);
+                
+                // Redirect to home page
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(error.message);
+            } finally {
+                setLoading(false);
+            }
+            return false;
+        }
+
+        // Function to handle Google login
+        async function handleGoogleLogin() {
+            hideError();
+            setLoading(true);
+
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                
+                // Get the ID token
+                const idToken = await user.getIdToken(true); // Force token refresh
+                
+                console.log('Got ID token:', idToken.substring(0, 20) + '...'); // Log first 20 chars of token
+                
+                // Verify token with backend
+                const response = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    }
+                });
+                
+                console.log('Token verification response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Token verification error:', errorData);
+                    throw new Error(errorData.error || 'Failed to verify token');
+                }
+                
+                const userData = await response.json();
+                console.log('User data received:', userData);
+                
+                // Store user data and token
+                localStorage.setItem('user', JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL
+                }));
+                localStorage.setItem('token', idToken);
+                
+                // Redirect to home page
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Google login error:', error);
+                showError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Function to handle Facebook login
+        async function handleFacebookLogin() {
+            hideError();
+            setLoading(true);
+
+            try {
+                const provider = new firebase.auth.FacebookAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                
+                // Get the ID token
+                const idToken = await user.getIdToken();
+                
+                // Verify token with backend
+                const response = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to verify token');
+                }
+                
+                const userData = await response.json();
+                
+                // Store user data and token
+                localStorage.setItem('user', JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL
+                }));
+                localStorage.setItem('token', idToken);
+                
+                // Redirect to home page
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Facebook login error:', error);
+                showError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Check authentication state
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                try {
+                    // Get the ID token
+                    const idToken = await user.getIdToken();
+                    
+                    // Verify token with backend
+                    const response = await fetch('/api/auth/verify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${idToken}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const userData = await response.json();
+                        
+                        // Store user data and token
+                        localStorage.setItem('user', JSON.stringify({
+                            uid: user.uid,
+                            email: user.email,
+                            displayName: user.displayName,
+                            photoURL: user.photoURL
+                        }));
+                        localStorage.setItem('token', idToken);
+                        
+                        // Redirect to home page
+                        window.location.href = '/';
+                    } else {
+                        const errorData = await response.json();
+                        console.error('Token verification failed:', errorData.error);
+                        // Sign out if token verification fails
+                        await auth.signOut();
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('token');
+                    }
+                } catch (error) {
+                    console.error('Error verifying token:', error);
+                    // Sign out if there's an error
+                    await auth.signOut();
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                }
+            } else {
+                console.log('No user is signed in');
+                // Clear user data from localStorage
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+            }
+        });
+    </script>
 </body>
 </html> 

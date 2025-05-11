@@ -19,9 +19,35 @@ import pytesseract
 import magic
 from dotenv import load_dotenv
 from flask_jwt_extended import jwt_required, get_jwt_identity
+import firebase_admin
+from firebase_admin import credentials, auth
 
 # Load environment variables
 load_dotenv()
+
+# Initialize Firebase Admin
+try:
+    # First try to load from environment variable
+    firebase_credentials = os.getenv('FIREBASE_CREDENTIALS')
+    if firebase_credentials:
+        cred_dict = json.loads(firebase_credentials)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        # Then try to load from file
+        cred = credentials.Certificate('firebase-credentials.json')
+    
+    # Initialize Firebase Admin
+    firebase_admin.initialize_app(cred)
+    print("Firebase Admin initialized successfully")
+except FileNotFoundError:
+    print("Firebase credentials not found. Running without Firebase authentication.")
+    print("Please provide Firebase credentials either through:")
+    print("1. FIREBASE_CREDENTIALS environment variable (JSON string)")
+    print("2. firebase-credentials.json file in the backend directory")
+except json.JSONDecodeError:
+    print("Invalid JSON in Firebase credentials. Please check the format.")
+except Exception as e:
+    print(f"Error initializing Firebase: {e}")
 
 app = Flask(__name__, 
             static_folder='../frontend/static',
@@ -29,6 +55,25 @@ app = Flask(__name__,
 
 # Enable CORS
 CORS(app)
+
+# Authentication middleware
+def auth_required(f):
+    def wrapper(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({'error': 'No token provided'}), 401
+        try:
+            # Remove 'Bearer ' from the token
+            token = auth_header.split(' ')[1]
+            # Verify the token
+            decoded_token = auth.verify_id_token(token)
+            # Add user info to request
+            request.user = decoded_token
+            return f(*args, **kwargs)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 401
+    wrapper.__name__ = f.__name__
+    return wrapper
 
 # MongoDB configuration
 app.config["MONGO_URI"] = "mongodb://localhost:27017/youaskedai"
@@ -42,7 +87,7 @@ DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions'
 
 # Initialize MongoDB
 try:
-mongo = PyMongo(app)
+    mongo = PyMongo(app)
     print("Successfully connected to MongoDB")
     print("Database and collections are ready")
 except Exception as e:
@@ -196,6 +241,10 @@ Verification:
 def home():
     return render_template('index.html')
 
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
 @app.route('/tutor')
 def tutor():
     return render_template('tutor.html')
@@ -230,19 +279,22 @@ def folder():
     return render_template('folder.html')
 
 @app.route('/api/folders', methods=['GET'])
+@auth_required
 def get_folders():
-    folders = list(mongo.db.folders.find())
+    folders = list(mongo.db.folders.find({'user_id': request.user['uid']}))
     for folder in folders:
         folder['_id'] = str(folder['_id'])
     return jsonify(folders)
 
 @app.route('/api/folders', methods=['POST'])
+@auth_required
 def create_folder():
     data = request.json
     folder = {
         'name': data.get('name'),
         'description': data.get('description', ''),
         'created_at': datetime.utcnow(),
+        'user_id': request.user['uid'],
         'files': [],
         'homework': [],
         'books': []
@@ -274,6 +326,7 @@ def get_folder_files(folder_id):
     return jsonify({'error': 'Folder not found'}), 404
 
 @app.route('/api/folders/<folder_id>/files', methods=['POST'])
+@auth_required
 def upload_file(folder_id):
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
@@ -287,12 +340,12 @@ def upload_file(folder_id):
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
 
-        filename = secure_filename(file.filename)
+    filename = secure_filename(file.filename)
     file_path = os.path.join(upload_dir, filename)
-        file.save(file_path)
-        
+    file.save(file_path)
+    
     # Add file to folder
-        file_data = {
+    file_data = {
         'name': filename,
         'path': file_path,
         'uploaded_at': datetime.utcnow()
@@ -582,6 +635,88 @@ def upload_file_to_my_files():
     )
 
     return jsonify(file_data)
+
+@app.route('/signup')
+def signup():
+    return render_template('signup.html')
+
+@app.route('/api/auth/verify', methods=['POST'])
+def verify_token():
+    try:
+        # Check if Firebase is initialized
+        if not firebase_admin._apps:
+            print("Firebase Admin SDK not initialized")
+            return jsonify({'error': 'Firebase Admin SDK not initialized. Please check server logs.'}), 500
+
+        # Get the Authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            print("No Authorization header provided")
+            return jsonify({'error': 'No Authorization header provided'}), 401
+        
+        if not auth_header.startswith('Bearer '):
+            print("Invalid Authorization header format")
+            return jsonify({'error': 'Invalid Authorization header format'}), 401
+
+        # Extract the token
+        token = auth_header.split('Bearer ')[1]
+        print(f"Received token: {token[:20]}...")  # Log first 20 chars of token
+
+        try:
+            # Verify the token with Firebase Admin
+            decoded_token = auth.verify_id_token(token)
+            print(f"Token verified successfully for user: {decoded_token.get('uid')}")
+            
+            # Get user data from the token
+            user_data = {
+                'uid': decoded_token['uid'],
+                'email': decoded_token.get('email'),
+                'displayName': decoded_token.get('name'),
+                'photoURL': decoded_token.get('picture')
+            }
+            print(f"User data extracted: {user_data}")
+
+            try:
+                # Store user in MongoDB if not exists
+                user_collection = mongo.db.users
+                existing_user = user_collection.find_one({'uid': user_data['uid']})
+                
+                if not existing_user:
+                    print(f"Creating new user in MongoDB: {user_data['uid']}")
+                    user_collection.insert_one({
+                        'uid': user_data['uid'],
+                        'email': user_data['email'],
+                        'displayName': user_data['displayName'],
+                        'photoURL': user_data['photoURL'],
+                        'createdAt': datetime.utcnow()
+                    })
+                else:
+                    print(f"Updating existing user in MongoDB: {user_data['uid']}")
+                    # Update user data if it has changed
+                    user_collection.update_one(
+                        {'uid': user_data['uid']},
+                        {'$set': {
+                            'email': user_data['email'],
+                            'displayName': user_data['displayName'],
+                            'photoURL': user_data['photoURL'],
+                            'updatedAt': datetime.utcnow()
+                        }}
+                    )
+
+                return jsonify(user_data), 200
+
+            except Exception as mongo_error:
+                print(f"MongoDB error: {str(mongo_error)}")
+                # Still return user data even if MongoDB operation fails
+                return jsonify(user_data), 200
+
+        except Exception as e:
+            print(f"Error verifying token: {str(e)}")
+            return jsonify({'error': f'Invalid token: {str(e)}'}), 401
+
+    except Exception as e:
+        print(f"Error in verify_token: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8000, debug=True) 
