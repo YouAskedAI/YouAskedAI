@@ -47,4 +47,4 @@ backend/uploads/
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db backend/firebase-credentials.json
